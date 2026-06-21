@@ -1,0 +1,11 @@
+# Geo Tag Camera Flutter App - Task List
+
+- [x] Initialize the Flutter project using `flutter create`
+- [x] Set up dependencies in `pubspec.yaml`
+- [x] Configure platform permissions (Android/iOS Manifests)
+- [x] Implement `image_processor.dart` for photo overlays and filters
+- [x] Implement `geotag_overlay.dart` widget
+- [x] Create `lib/screens/image_preview_screen.dart` with share, delete, and premium UI.
+- [x] Modify `lib/screens/camera_screen.dart` to navigate to the new preview screen on capture and load the latest image thumbnail.
+- [x] Update gallery entry points in `camera_screen.dart` to go to the custom `GalleryScreen`.
+- [/] Verify there are no analyzer errors.quality

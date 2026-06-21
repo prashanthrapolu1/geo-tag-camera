@@ -1,0 +1,46 @@
+# Implementation Plan - Flutter Geo Tag Camera App
+
+We will create a premium Flutter application in the workspace directory. It will feature a real-time camera view, live GPS/geotag card overlay, image filters, and composite image saving/exporting.
+
+## Key Packages to Include
+- `camera`: For camera capture and preview.
+- `geolocator`: For obtaining GPS coordinates (lat, long).
+- `geocoding`: For reverse-geocoding coordinates to a human-readable address.
+- `path_provider` & `path`: For managing local image storage.
+- `image`: For image filters, overlays, and drawing the geotag card onto the captured photo file.
+
+## Application Architecture & UI
+- **Camera Screen**: Displays the live camera view, overlayed with a custom glassmorphic Card showcasing the address, coordinates, and weather variables. Includes controls to toggle templates, adjust filters/effects, switch cameras, and the shutter capture button.
+- **Image Filters**: Real-time camera visual effects using Flutter's `ColorFiltered` widget. When captured, we will apply the chosen color matrix or filter using the Dart `image` package to bake the filter into the saved JPEG.
+- **Composite Image Renderer**: Renders the captured photo, processes it with the active filter, and draws the geotag card watermark (text, coordinates, and mini map mockup) using the Dart `Canvas` or `image` package libraries.
+- **Gallery Screen**: A grid view of captured geotagged photos with capabilities to view, download, or delete them.
+
+## Proposed Changes
+
+### [Flutter Setup]
+We will run `flutter create --org com.geocamera .` to initialize a new Flutter project in the current folder.
+
+### [Pubspec Dependencies]
+Modify `pubspec.yaml` to include:
+- `camera`
+- `geolocator`
+- `geocoding`
+- `path_provider`
+- `image`
+- `intl` (for dates)
+
+### [Core Dart Implementation]
+- `lib/main.dart`: Initializer, theme config, and main route.
+- `lib/screens/camera_screen.dart`: Custom Camera controller, real-time location integration, filters list, and overlay templates.
+- `lib/screens/gallery_screen.dart`: Shows saved photos stored locally in the app documents directory.
+- `lib/widgets/geotag_overlay.dart`: UI widget representing the glassmorphic card.
+- `lib/services/image_processor.dart`: Generates the final geotagged JPEG by merging the camera image with coordinates, addresses, and weather variables.
+
+## Verification Plan
+
+### Automated Tests
+- Run `flutter analyze` to ensure clean compilation.
+- Run `flutter build apk` (optional, if user requests).
+
+### Manual Verification
+- Launch the application and test camera preview, location fetching, template selection, capture, and filter applications.
