@@ -560,7 +560,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appSettings = ref.watch(appSettingsProvider);
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0C),
       body: Row(
@@ -623,15 +622,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               const SizedBox(height: 12.0),
               TextField(
                 controller: _addressController,
-                style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                enabled: false,
+                style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                 maxLines: 2,
                 decoration: _getTextFieldDecoration("Address Location"),
-                onChanged: (val) {
-                  setState(() {
-                    _address = val;
-                    _isLocationOverridden = true;
-                  });
-                },
               ),
               const SizedBox(height: 12.0),
               Row(
@@ -639,30 +633,20 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   Expanded(
                     child: TextField(
                       controller: _latController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                       keyboardType: TextInputType.number,
                       decoration: _getTextFieldDecoration("Latitude"),
-                      onChanged: (val) {
-                        setState(() {
-                          _latitude = double.tryParse(val) ?? 0.0;
-                          _isLocationOverridden = true;
-                        });
-                      },
                     ),
                   ),
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: TextField(
                       controller: _lngController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                       keyboardType: TextInputType.number,
                       decoration: _getTextFieldDecoration("Longitude"),
-                      onChanged: (val) {
-                        setState(() {
-                          _longitude = double.tryParse(val) ?? 0.0;
-                          _isLocationOverridden = true;
-                        });
-                      },
                     ),
                   ),
                 ],
@@ -694,18 +678,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   Expanded(
                     child: TextField(
                       controller: _tempController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                       decoration: _getTextFieldDecoration("Temp (°C)"),
-                      onChanged: (val) => setState(() => _temperature = val),
                     ),
                   ),
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: TextField(
                       controller: _humidityController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                       decoration: _getTextFieldDecoration("Humidity (%)"),
-                      onChanged: (val) => setState(() => _humidity = val),
                     ),
                   ),
                 ],
@@ -716,9 +700,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   Expanded(
                     child: TextField(
                       controller: _windController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.0),
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white54, fontSize: 13.0),
                       decoration: _getTextFieldDecoration("Wind (km/h)"),
-                      onChanged: (val) => setState(() => _wind = val),
                     ),
                   ),
                   const SizedBox(width: 12.0),
@@ -857,8 +841,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   InputDecoration _getTextFieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54, fontSize: 11.0),
-      fillColor: const Color(0xFF1E1E24),
+      labelStyle: const TextStyle(color: Colors.white38, fontSize: 11.0),
+      fillColor: const Color(0xFF16161C),
       filled: true,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -867,6 +851,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
         borderSide: const BorderSide(color: Color(0xFFFFB300)),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: const BorderSide(color: Colors.white10),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
     );

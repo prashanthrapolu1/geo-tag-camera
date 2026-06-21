@@ -70,14 +70,19 @@ class GeotagOverlay extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Lat: ${latitude.toStringAsFixed(6)} | Long: ${longitude.toStringAsFixed(6)}",
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10.0,
-                  fontFamily: 'monospace',
+              Expanded(
+                child: Text(
+                  "Lat: ${latitude.toStringAsFixed(6)} | Long: ${longitude.toStringAsFixed(6)}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10.0,
+                    fontFamily: 'monospace',
+                  ),
                 ),
               ),
+              const SizedBox(width: 8.0),
               Text(
                 "Temp: $temperature°C | Wind: $wind km/h",
                 style: const TextStyle(
