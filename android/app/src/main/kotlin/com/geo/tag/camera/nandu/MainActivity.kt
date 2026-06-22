@@ -1,4 +1,4 @@
-package com.geocamera.geo_camera
+package com.geo.tag.camera.nandu
 
 import io.flutter.embedding.android.FlutterActivity
 

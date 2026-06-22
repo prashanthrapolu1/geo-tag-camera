@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/camera_screen.dart';
+import 'screens/splash_screen.dart';
+import 'services/admob_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AdMobService.initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -13,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Geo Tag Camera',
+      title: 'Geo Tag Camera Nandu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -30,7 +33,7 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(fontFamily: 'Outfit'),
         ),
       ),
-      home: const CameraScreen(),
+      home: const SplashScreen(),
     );
   }
 }

@@ -10,10 +10,10 @@ class GeotagOverlay extends StatelessWidget {
   final double? altitude;
   final double? heading;
   final String dateTimeStr;
-  final String temperature;
-  final String humidity;
-  final String wind;
-  final String pressure;
+  final String? temperature;
+  final String? humidity;
+  final String? wind;
+  final String? pressure;
   final String template;
   final TemplateSettings? settings;
   final AppSettings? appSettings;
@@ -26,10 +26,10 @@ class GeotagOverlay extends StatelessWidget {
     this.altitude,
     this.heading,
     required this.dateTimeStr,
-    required this.temperature,
-    required this.humidity,
-    required this.wind,
-    required this.pressure,
+    this.temperature,
+    this.humidity,
+    this.wind,
+    this.pressure,
     required this.template,
     this.settings,
     this.appSettings,
@@ -83,14 +83,18 @@ class GeotagOverlay extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8.0),
-              Text(
-                "Temp: $temperature°C | Wind: $wind km/h",
-                style: const TextStyle(
-                  color: Color(0xFFFFB300),
-                  fontSize: 10.0,
-                  fontWeight: FontWeight.w500,
+              if (temperature != null || wind != null)
+                Text(
+                  [
+                    if (temperature != null) "Temp: $temperature°C",
+                    if (wind != null) "Wind: $wind km/h"
+                  ].join(" | "),
+                  style: const TextStyle(
+                    color: Color(0xFFFFB300),
+                    fontSize: 10.0,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
             ],
           ),
         ],
@@ -154,14 +158,15 @@ class GeotagOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4.0),
-            Text(
-              "Temp: $temperature °C",
-              style: const TextStyle(
-                color: Colors.lightBlueAccent,
-                fontSize: 9.0,
-                fontWeight: FontWeight.w500,
+            if (temperature != null)
+              Text(
+                "Temp: $temperature °C",
+                style: const TextStyle(
+                  color: Colors.lightBlueAccent,
+                  fontSize: 9.0,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -277,12 +282,15 @@ class GeotagOverlay extends StatelessWidget {
                       ),
                       if (opts.showLogo) ...[
                         const SizedBox(width: 8.0),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.location_on, color: Color(0xFFFFB300), size: 24.0),
-                            const Text("Geo Tag Camera", style: TextStyle(color: Colors.white, fontSize: 8.0)),
-                          ],
+                        Transform.translate(
+                          offset: const Offset(0, -10.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.location_on, color: Color(0xFFFFB300), size: 24.0),
+                              const Text("Geo Tag Camera", style: TextStyle(color: Colors.white, fontSize: 8.0)),
+                            ],
+                          ),
                         ),
                       ],
                     ],
@@ -352,11 +360,13 @@ class GeotagOverlay extends StatelessWidget {
                     spacing: 12.0,
                     runSpacing: 4.0,
                     children: [
-                      _buildIconText(Icons.air, "$wind km/h"),
-                      _buildIconText(Icons.water_drop, "$humidity%"),
-                      _buildIconText(Icons.terrain, "605 m", color: Colors.yellowAccent),
-                      _buildIconText(Icons.explore, _getCompassDirection(heading), color: Colors.white70),
-                      if (opts.showLogo) // Added weather next to logo like image
+                      if (opts.showWeather && wind != null) _buildIconText(Icons.air, "$wind km/h"),
+                      if (opts.showWeather && humidity != null) _buildIconText(Icons.water_drop, "$humidity%"),
+                      if (opts.showAltitude)
+                        _buildIconText(Icons.terrain, "${altitude?.toStringAsFixed(1) ?? '0.0'} m", color: Colors.yellowAccent),
+                      if (opts.showCompass)
+                        _buildIconText(Icons.explore, _getCompassDirection(heading), color: Colors.white70),
+                      if (opts.showWeather && temperature != null)
                         _buildIconText(Icons.wb_sunny, "$temperature°C", color: Colors.orange),
                     ],
                   ),

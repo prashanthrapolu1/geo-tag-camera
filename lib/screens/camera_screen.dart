@@ -22,9 +22,13 @@ import '../models/template_settings.dart';
 import 'advance_template_screen.dart';
 import 'settings_screen.dart';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../providers/settings_provider.dart';
+import '../services/admob_service.dart';
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -43,8 +47,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   final GlobalKey _overlayKey = GlobalKey();
   
   TemplateSettings _templateSettings = TemplateSettings();
-  bool _isVideoMode = false;
-  bool _isRecording = false;
+  FlashMode _flashMode = FlashMode.auto;
+
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
 
   Future<void> _loadLatestImage() async {
     if (kIsWeb) return;
@@ -78,17 +84,17 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   }
 
   // Geotag Data
-  String _address = "Mountainside Lane, Schroon Lake, New York 12870, United States";
-  double _latitude = 22.430930;
-  double _longitude = 74.405493;
+  String _address = "Locating...";
+  double _latitude = 0.0;
+  double _longitude = 0.0;
   double _altitude = 0.0;
   String _dateTimeStr = "";
   
-  // Weather Mock Details (Configurable via sidebar)
-  String _temperature = "39";
-  String _humidity = "3";
-  String _wind = "32";
-  String _pressure = "23";
+  // Weather Details (Fetched from API)
+  String? _temperature;
+  String? _humidity;
+  String? _wind;
+  String? _pressure;
 
   // Configuration
   String _activeTemplate = 'default';
@@ -109,9 +115,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
     _loadTemplateSettings();
     _initDateTime();
-    _initCamera();
+    await _initCamera();
     _initLocation();
     _loadLatestImage();
 
@@ -127,9 +137,26 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     _addressController.text = _address;
     _latController.text = _latitude.toString();
     _lngController.text = _longitude.toString();
-    _tempController.text = _temperature;
-    _humidityController.text = _humidity;
-    _windController.text = _wind;
+    _tempController.text = _temperature ?? '';
+    _humidityController.text = _humidity ?? '';
+    _windController.text = _wind ?? '';
+
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = AdMobService.createBannerAd(
+      onAdLoaded: () {
+        if (mounted) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        }
+      },
+      onAdFailedToLoad: (error) {
+        print("Banner Ad failed to load: $error");
+      },
+    )..load();
   }
 
   @override
@@ -143,6 +170,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     _tempController.dispose();
     _humidityController.dispose();
     _windController.dispose();
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -221,6 +249,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 
     try {
       await _cameraController!.initialize();
+      try {
+        await _cameraController!.setFlashMode(_flashMode);
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _isCameraInitialized = true;
@@ -246,11 +277,17 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
         _startLocationStream();
 
         try {
-          // Get immediate current position with isolation
+          // Try to get a quick fix from last known position
+          Position? lastPosition = await Geolocator.getLastKnownPosition();
+          if (lastPosition != null && mounted) {
+            _updatePositionState(lastPosition);
+          }
+
+          // Get current position with lower timeout and high accuracy instead of best
           Position position = await Geolocator.getCurrentPosition(
             locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.best,
-              timeLimit: Duration(seconds: 4),
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 2),
             ),
           );
           _updatePositionState(position);
@@ -286,18 +323,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
         final current = data['current'];
         if (current != null && mounted) {
           setState(() {
-            _temperature = (current['temperature_2m'] ?? _temperature).toString();
-            _humidity = (current['relative_humidity_2m'] ?? _humidity).toString();
-            _wind = (current['wind_speed_10m'] ?? _wind).toString();
+            _temperature = current['temperature_2m']?.toString();
+            _humidity = current['relative_humidity_2m']?.toString();
+            _wind = current['wind_speed_10m']?.toString();
             
             final double? pressVal = current['surface_pressure']?.toDouble();
             if (pressVal != null) {
               _pressure = (pressVal / 10).toStringAsFixed(1);
             }
 
-            _tempController.text = _temperature;
-            _humidityController.text = _humidity;
-            _windController.text = _wind;
+            _tempController.text = _temperature ?? '';
+            _humidityController.text = _humidity ?? '';
+            _windController.text = _wind ?? '';
           });
         }
       }
@@ -353,6 +390,49 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
         .listen((Position position) {
       _updatePositionState(position);
     });
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    FlashMode nextMode;
+    switch (_flashMode) {
+      case FlashMode.off:
+        nextMode = FlashMode.auto;
+        break;
+      case FlashMode.auto:
+        nextMode = FlashMode.always;
+        break;
+      case FlashMode.always:
+        nextMode = FlashMode.torch;
+        break;
+      case FlashMode.torch:
+      default:
+        nextMode = FlashMode.off;
+        break;
+    }
+    try {
+      await _cameraController!.setFlashMode(nextMode);
+      if (mounted) {
+        setState(() {
+          _flashMode = nextMode;
+        });
+      }
+    } catch (e) {
+      _showSnackBar("Failed to set flash mode: $e");
+    }
+  }
+
+  IconData _getFlashIcon() {
+    switch (_flashMode) {
+      case FlashMode.off:
+        return Icons.flash_off;
+      case FlashMode.auto:
+        return Icons.flash_auto;
+      case FlashMode.always:
+        return Icons.flash_on;
+      case FlashMode.torch:
+        return Icons.highlight;
+    }
   }
 
   Future<void> _toggleCamera() async {
@@ -468,6 +548,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   }
 
   void _showSnackBar(String msg) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -477,41 +558,22 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     );
   }
 
-  Future<void> _startVideoRecording() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
-    if (_cameraController!.value.isRecordingVideo) return;
-    try {
-      await _cameraController!.startVideoRecording();
-      setState(() {
-        _isRecording = true;
-      });
-    } catch (e) {
-      _showSnackBar("Failed to start recording: $e");
-    }
-  }
+  final List<String> _filterPresets = ['default', 'chrome', 'vintage', 'mono', 'warm', 'cool'];
 
-  Future<void> _stopVideoRecording() async {
-    if (_cameraController == null || !_cameraController!.value.isRecordingVideo) return;
-    try {
-      final XFile video = await _cameraController!.stopVideoRecording();
-      setState(() {
-        _isRecording = false;
-        _isProcessing = true;
-      });
-      _showSnackBar("Saving video...");
-      
-      if (!kIsWeb) {
-        await Gal.putVideo(video.path);
-        _showSnackBar("Video saved to gallery!");
-      }
-      
-    } catch (e) {
-      _showSnackBar("Failed to stop recording: $e");
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
-    }
+  void _cycleFilter(int direction) {
+    if (!mounted) return;
+    int currentIndex = _filterPresets.indexOf(_activeFilterPreset);
+    if (currentIndex == -1) currentIndex = 0;
+    
+    int nextIndex = (currentIndex + direction) % _filterPresets.length;
+    if (nextIndex < 0) nextIndex = _filterPresets.length - 1;
+
+    setState(() {
+      _activeFilterPreset = _filterPresets[nextIndex];
+    });
+    
+    String filterName = _activeFilterPreset[0].toUpperCase() + _activeFilterPreset.substring(1);
+    _showSnackBar("Filter: $filterName");
   }
 
   // Visual filter color matrix generator based on selected preset
@@ -716,6 +778,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
+                          isExpanded: true,
                           dropdownColor: const Color(0xFF1E1E24),
                           value: _activeTemplate,
                           items: const [
@@ -761,10 +824,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               // Go to Gallery
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const GalleryScreen()),
-                  ).then((_) => _loadLatestImage());
+                  AdMobService.showRewardedAdIfAvailable(
+                    context: context,
+                    onProceed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const GalleryScreen()),
+                      ).then((_) => _loadLatestImage());
+                    },
+                  );
                 },
                 icon: const Icon(Icons.photo_library),
                 label: const Text("Open Gallery Collection"),
@@ -785,7 +853,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                   );
                 },
                 icon: const Icon(Icons.settings),
-                label: const Text("App Settings & Export"),
+                label: const Text("App Settings"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white10,
                   foregroundColor: Colors.white,
@@ -913,10 +981,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               IconButton(
                 icon: const Icon(Icons.photo_library, color: Colors.white),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const GalleryScreen()),
-                  ).then((_) => _loadLatestImage());
+                  AdMobService.showRewardedAdIfAvailable(
+                    context: context,
+                    onProceed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const GalleryScreen()),
+                      ).then((_) => _loadLatestImage());
+                    },
+                  );
                 },
               )
             ],
@@ -930,11 +1003,20 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               children: [
                 // Camera Feed
                 Positioned.fill(
-                  child: ColorFiltered(
-                    colorFilter: _getColorFilter(_activeFilterPreset),
-                    child: _isCameraInitialized && _cameraController != null
-                        ? CameraPreview(_cameraController!)
-                        : _buildCameraFallbackStream(),
+                  child: GestureDetector(
+                    onHorizontalDragEnd: (details) {
+                      if (details.primaryVelocity! > 0) {
+                        _cycleFilter(-1); // Swipe right
+                      } else if (details.primaryVelocity! < 0) {
+                        _cycleFilter(1); // Swipe left
+                      }
+                    },
+                    child: ColorFiltered(
+                      colorFilter: _getColorFilter(_activeFilterPreset),
+                      child: _isCameraInitialized && _cameraController != null
+                          ? CameraPreview(_cameraController!)
+                          : _buildCameraFallbackStream(),
+                    ),
                   ),
                 ),
 
@@ -1001,46 +1083,22 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Photo / Video Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () => setState(() => _isVideoMode = false),
-                    child: Text(
-                      "PHOTO",
-                      style: TextStyle(
-                        color: !_isVideoMode ? const Color(0xFFFFB300) : Colors.white54,
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 24.0),
-                  GestureDetector(
-                    onTap: () => setState(() => _isVideoMode = true),
-                    child: Text(
-                      "VIDEO",
-                      style: TextStyle(
-                        color: _isVideoMode ? const Color(0xFFFFB300) : Colors.white54,
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // Collection Thumbnail
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const GalleryScreen()),
-                      ).then((_) => _loadLatestImage());
+                      AdMobService.showRewardedAdIfAvailable(
+                        context: context,
+                        onProceed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const GalleryScreen()),
+                          ).then((_) => _loadLatestImage());
+                        },
+                      );
                     },
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1078,17 +1136,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 
                   // Capture shutter button
                   GestureDetector(
-                    onTap: () {
-                      if (_isVideoMode) {
-                        if (_isRecording) {
-                          _stopVideoRecording();
-                        } else {
-                          _startVideoRecording();
-                        }
-                      } else {
-                        _capturePhoto();
-                      }
-                    },
+                    onTap: _capturePhoto,
                     child: Container(
                       width: 72.0,
                       height: 72.0,
@@ -1098,12 +1146,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                       ),
                       padding: const EdgeInsets.all(4.0),
                       child: Container(
-                        decoration: BoxDecoration(
-                          color: _isVideoMode
-                              ? (_isRecording ? Colors.red : Colors.redAccent)
-                              : Colors.white,
-                          shape: _isRecording ? BoxShape.rectangle : BoxShape.circle,
-                          borderRadius: _isRecording ? BorderRadius.circular(8.0) : null,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ),
@@ -1115,14 +1160,29 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                     onPressed: _openAdvanceTemplateScreen,
                   ),
                   
-                  // Empty placeholder for symmetry
-                  const SizedBox(width: 44.0),
+                  // Flash Toggle button
+                  IconButton(
+                    icon: Icon(_getFlashIcon(), color: Colors.white, size: 28.0),
+                    onPressed: _toggleFlash,
+                  ),
                 ],
               ),
               const SizedBox(height: 16.0),
             ],
           ),
         ),
+
+        // Ad Banner with Spacing
+        if (_isBannerAdLoaded && _bannerAd != null)
+          Container(
+            color: Colors.black,
+            padding: const EdgeInsets.only(bottom: 8.0, top: 4.0), // Spacing for banner ad
+            child: SizedBox(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
+          ),
       ],
     );
   }

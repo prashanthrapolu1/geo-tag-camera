@@ -10,6 +10,9 @@ class TemplateSettings {
   bool showLogo;
   bool showNote;
   bool showPersonName;
+  bool showWeather;
+  bool showAltitude;
+  bool showCompass;
 
   String noteText;
   String personNameText;
@@ -19,13 +22,16 @@ class TemplateSettings {
     this.showShortAddress = false,
     this.showFullAddress = true,
     this.showLatLong = true,
-    this.showPlusCode = true,
+    this.showPlusCode = false,
     this.showDateTime = true,
     this.showTimeZone = false,
     this.showNumbering = false,
     this.showLogo = true,
     this.showNote = false,
     this.showPersonName = false,
+    this.showWeather = false,
+    this.showAltitude = false,
+    this.showCompass = true,
     this.noteText = "",
     this.personNameText = "",
   });
@@ -42,6 +48,9 @@ class TemplateSettings {
     bool? showLogo,
     bool? showNote,
     bool? showPersonName,
+    bool? showWeather,
+    bool? showAltitude,
+    bool? showCompass,
     String? noteText,
     String? personNameText,
   }) {
@@ -57,6 +66,9 @@ class TemplateSettings {
       showLogo: showLogo ?? this.showLogo,
       showNote: showNote ?? this.showNote,
       showPersonName: showPersonName ?? this.showPersonName,
+      showWeather: showWeather ?? this.showWeather,
+      showAltitude: showAltitude ?? this.showAltitude,
+      showCompass: showCompass ?? this.showCompass,
       noteText: noteText ?? this.noteText,
       personNameText: personNameText ?? this.personNameText,
     );
@@ -75,6 +87,9 @@ class TemplateSettings {
       'showLogo': showLogo,
       'showNote': showNote,
       'showPersonName': showPersonName,
+      'showWeather': showWeather,
+      'showAltitude': showAltitude,
+      'showCompass': showCompass,
       'noteText': noteText,
       'personNameText': personNameText,
     };
@@ -86,13 +101,16 @@ class TemplateSettings {
       showShortAddress: json['showShortAddress'] ?? false,
       showFullAddress: json['showFullAddress'] ?? true,
       showLatLong: json['showLatLong'] ?? true,
-      showPlusCode: json['showPlusCode'] ?? true,
+      showPlusCode: json['showPlusCode'] ?? false,
       showDateTime: json['showDateTime'] ?? true,
       showTimeZone: json['showTimeZone'] ?? false,
       showNumbering: json['showNumbering'] ?? false,
       showLogo: json['showLogo'] ?? true,
       showNote: json['showNote'] ?? false,
       showPersonName: json['showPersonName'] ?? false,
+      showWeather: json['showWeather'] ?? false,
+      showAltitude: json['showAltitude'] ?? false,
+      showCompass: json['showCompass'] ?? true,
       noteText: json['noteText'] ?? "",
       personNameText: json['personNameText'] ?? "",
     );

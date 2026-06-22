@@ -8,10 +8,10 @@ class AdvanceTemplateScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
   final String dateTimeStr;
-  final String temperature;
-  final String humidity;
-  final String wind;
-  final String pressure;
+  final String? temperature;
+  final String? humidity;
+  final String? wind;
+  final String? pressure;
 
   const AdvanceTemplateScreen({
     Key? key,
@@ -20,10 +20,10 @@ class AdvanceTemplateScreen extends StatefulWidget {
     required this.latitude,
     required this.longitude,
     required this.dateTimeStr,
-    required this.temperature,
-    required this.humidity,
-    required this.wind,
-    required this.pressure,
+    this.temperature,
+    this.humidity,
+    this.wind,
+    this.pressure,
   }) : super(key: key);
 
   @override
@@ -74,6 +74,15 @@ class _AdvanceTemplateScreenState extends State<AdvanceTemplateScreen> {
           break;
         case 'personName':
           _settings.showPersonName = value;
+          break;
+        case 'weather':
+          _settings.showWeather = value;
+          break;
+        case 'altitude':
+          _settings.showAltitude = value;
+          break;
+        case 'compass':
+          _settings.showCompass = value;
           break;
       }
     });
@@ -319,6 +328,24 @@ class _AdvanceTemplateScreenState extends State<AdvanceTemplateScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  _buildToggleItem(
+                    title: "Weather Status",
+                    key: 'weather',
+                    value: _settings.showWeather,
+                    trailing: const Icon(Icons.wb_sunny, color: Colors.orange, size: 20.0),
+                  ),
+                  _buildToggleItem(
+                    title: "Altitude (Elevation)",
+                    key: 'altitude',
+                    value: _settings.showAltitude,
+                    trailing: const Icon(Icons.terrain, color: Colors.yellowAccent, size: 20.0),
+                  ),
+                  _buildToggleItem(
+                    title: "Digital Compass",
+                    key: 'compass',
+                    value: _settings.showCompass,
+                    trailing: const Icon(Icons.explore, color: Colors.blueAccent, size: 20.0),
                   ),
                   const SizedBox(height: 20.0),
                 ],

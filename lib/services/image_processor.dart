@@ -19,10 +19,10 @@ class ImageProcessor {
     double? altitude,
     double? heading,
     required String dateTimeStr,
-    required String temperature,
-    required String humidity,
-    required String wind,
-    required String pressure,
+    String? temperature,
+    String? humidity,
+    String? wind,
+    String? pressure,
     required String template,
     required String filterPreset,
     TemplateSettings? settings,
@@ -69,6 +69,8 @@ class ImageProcessor {
       address: address,
       lat: latitude,
       lng: longitude,
+      altitude: altitude,
+      heading: heading,
       dateTimeStr: dateTimeStr,
       temp: temperature,
       humidity: humidity,
@@ -138,11 +140,13 @@ class ImageProcessor {
     required String address,
     required double lat,
     required double lng,
+    double? altitude,
+    double? heading,
     required String dateTimeStr,
-    required String temp,
-    required String humidity,
-    required String wind,
-    required String pressure,
+    String? temp,
+    String? humidity,
+    String? wind,
+    String? pressure,
     required String template,
     img.Image? satelliteTile,
     TemplateSettings? settings,
@@ -199,7 +203,7 @@ class ImageProcessor {
         color: img.ColorRgba8(255, 255, 255, 255),
       );
 
-      final String stats = "LAT: ${lat.toStringAsFixed(6)} | LNG: ${lng.toStringAsFixed(6)} | TEMP: $temp°C | WIND: $wind km/h";
+      final String stats = "LAT: ${lat.toStringAsFixed(6)} | LNG: ${lng.toStringAsFixed(6)}${temp != null ? ' | TEMP: $temp°C' : ''}${wind != null ? ' | WIND: $wind km/h' : ''}";
       img.drawString(
         barCanvas,
         stats,
@@ -292,15 +296,17 @@ class ImageProcessor {
         color: img.ColorRgba8(200, 200, 200, 255),
       );
 
-      currentY += 24;
-      img.drawString(
-        sidebarCanvas,
-        "TEMP: $temp °C",
-        font: img.arial14,
-        x: 12,
-        y: currentY,
-        color: img.ColorRgba8(100, 200, 255, 255),
-      );
+      if (temp != null) {
+        currentY += 24;
+        img.drawString(
+          sidebarCanvas,
+          "TEMP: $temp °C",
+          font: img.arial14,
+          x: 12,
+          y: currentY,
+          color: img.ColorRgba8(100, 200, 255, 255),
+        );
+      }
 
       // Resize and composite
       final int targetW = (cardW * scale).round();
@@ -410,10 +416,10 @@ class ImageProcessor {
     if (opts.showLogo) {
       img.drawString(
         cardCanvas,
-        "Nature House",
+        "Geo Tag Camera",
         font: img.arial14,
-        x: cardW - 120,
-        y: textY,
+        x: cardW - 140,
+        y: textY - 10,
         color: img.ColorRgba8(255, 255, 255, 255),
       );
     }
@@ -500,7 +506,18 @@ class ImageProcessor {
     textY += 12;
 
     // Bottom Stats row
-    final statsStr = "$wind km/h  |  $humidity%  |  605 m  |  418 µT";
+    final List<String> statsParts = [];
+    if (opts.showWeather && wind != null) statsParts.add("$wind km/h");
+    if (opts.showWeather && humidity != null) statsParts.add("$humidity%");
+    if (opts.showAltitude) {
+      statsParts.add("${altitude?.toStringAsFixed(1) ?? '0.0'} m"); 
+    }
+    if (opts.showCompass) {
+      statsParts.add(_getCompassDirection(heading));
+    }
+    if (opts.showWeather && temp != null) statsParts.add("$temp°C");
+    final statsStr = statsParts.join("  |  ");
+    
     img.drawString(
       cardCanvas,
       statsStr,
@@ -522,6 +539,13 @@ class ImageProcessor {
     return image;
   }
 
+
+  static String _getCompassDirection(double? heading) {
+    if (heading == null) return "N/A";
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    final index = (((heading + 22.5) % 360) / 45).floor() % 8;
+    return directions[index];
+  }
 
   // Word-wrap helper
   static List<String> _wrapText(String text, int maxChars) {

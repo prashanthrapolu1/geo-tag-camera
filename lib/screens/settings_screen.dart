@@ -55,28 +55,6 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           ),
-          const Divider(color: Colors.white10),
-          _buildSectionHeader("EXPORT"),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf, color: Colors.white54),
-            title: const Text("Export PDF Report", style: TextStyle(color: Colors.white)),
-            subtitle: const Text("Generate a PDF report of captured photos", style: TextStyle(color: Colors.white54)),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("PDF Export requires Gallery Phase integration.")),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.data_object, color: Colors.white54),
-            title: const Text("Export JSON Data", style: TextStyle(color: Colors.white)),
-            subtitle: const Text("Export metadata for all captured photos", style: TextStyle(color: Colors.white54)),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("JSON Export requires Gallery Phase integration.")),
-              );
-            },
-          ),
         ],
       ),
     );

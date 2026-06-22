@@ -79,6 +79,50 @@ class _GalleryScreenState extends State<GalleryScreen> {
     }
   }
 
+  Future<void> _deleteAllPhotos() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        title: const Text("Delete All Photos", style: TextStyle(color: Colors.white)),
+        content: const Text("Are you sure you want to delete all photos in the gallery? This action cannot be undone.", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text("Delete All", style: TextStyle(color: Colors.redAccent)),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              setState(() {
+                _isLoading = true;
+              });
+              try {
+                for (final file in _photoFiles) {
+                  if (await file.exists()) {
+                    await file.delete();
+                  }
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("All photos deleted successfully.")),
+                );
+                _loadGalleryPhotos();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Failed to delete some photos: $e")),
+                );
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openFullScreenImage(int initialIndex) {
     int currentIndex = initialIndex;
 
@@ -187,6 +231,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text("Gallery Collection", style: TextStyle(color: Colors.white, fontSize: 16.0)),
         elevation: 0,
+        actions: [
+          if (_photoFiles.isNotEmpty && !_isLoading)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+              onPressed: _deleteAllPhotos,
+              tooltip: "Delete All",
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFB300)))
